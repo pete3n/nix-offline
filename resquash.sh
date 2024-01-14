@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p squashfsTools xorriso
+#! nix-shell -i bash -p squashfsTools xorriso syslinux
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run with sudo privileges."
@@ -40,9 +40,6 @@ fi
 MOUNT_POINT="./iso_mnt"
 mkdir -p $MOUNT_POINT
 
-MOUNT_POINT_EFI="./iso_efi_mnt"
-mkdir -p $MOUNT_POINT_EFI
-
 SQUASHFS_PATH="$MOUNT_POINT/nix-store.squashfs"
 
 EXTRACTED_PATH="./squash_tmp"
@@ -50,19 +47,14 @@ mkdir -p $EXTRACTED_PATH
 
 MODIFIED_SQUASHFS_PATH="./nix-store-mod.squashfs"
 
-NEW_ISO_P1_CONTENTS=./new_iso_contents_p1
-mkdir -p $NEW_ISO_P1_CONTENTS
+NEW_ISO_PATH="./new_iso"
+mkdir -p $NEW_ISO_PATH
 
-NEW_ISO_P2_CONTENTS=./new_iso_contents_p2
-mkdir -p $NEW_ISO_P2_CONTENTS
-
-EFI_IMG_PATH="./efi.img"
-NEW_ISO_PATH="./patched_installer.iso"
+NEW_ISO_FILE="./patched_installer.iso"
 
 LOOP_DEVICE=$(losetup -Pf --show $ISO_PATH)
 
 PART1="${LOOP_DEVICE}p1"
-PART2="${LOOP_DEVICE}p2"
 
 error_handler() {
     exit_status=$?
@@ -70,9 +62,8 @@ error_handler() {
         echo "Script halted due to error"
         sleep 3
         umount $MOUNT_POINT
-        umount $MOUNT_POINT_EFI
         losetup -d $LOOP_DEVICE
-        rm -rf $MOUNT_POINT $MOUNT_POINT_EFI $EXTRACTED_PATH $MODIFIED_SQUASHFS_PATH $NEW_ISO_P1_CONTENTS $NEW_ISO_P2_CONTENTS $EFI_IMG_PATH
+        rm -rf $MOUNT_POINT  $EXTRACTED_PATH $MODIFIED_SQUASHFS_PATH $NEW_ISO_PATH 
 
         ./restore_env.sh
         exit 1
@@ -80,9 +71,8 @@ error_handler() {
 }
 trap 'error_handler $LINENO' ERR
 
-echo "Mounting ISO partitions..."
+echo "Mounting ISO partition..."
 mount $PART1 $MOUNT_POINT
-mount $PART2 $MOUNT_POINT_EFI
 echo
 
 echo "Extracting SquashFS nix-store..."
@@ -99,41 +89,38 @@ echo
 
 echo "Copying old partition 1 ISO contents..."
 shopt -s dotglob
-cp -r $MOUNT_POINT/* $NEW_ISO_P1_CONTENTS
+cp -r $MOUNT_POINT/* $NEW_ISO_PATH
 shopt -u dotglob
-rm ./new_iso_contents_p1/$(basename $SQUASHFS_PATH)
+rm $NEW_ISO_PATH/$(basename $SQUASHFS_PATH)
 echo
 
 echo "Copying new nix-store SquashFS..."
-cp $MODIFIED_SQUASHFS_PATH $NEW_ISO_P1_CONTENTS
+cp $MODIFIED_SQUASHFS_PATH $NEW_ISO_PATH/$(basename $SQUASHFS_PATH)
 echo
 
-echo "Copying EFI data to partition 2..."
-shopt -s dotglob
-cp -r $MOUNT_POINT_EFI/* $NEW_ISO_P2_CONTENTS
-shopt -u dotglob
+FULL_PATH_TO_ISOLINUX_BIN=$(realpath $NEW_ISO_PATH/isolinux/isolinux.bin)
+echo "Full path to isolinux.bin: $FULL_PATH_TO_ISOLINUX_BIN"
+
+echo "Creating new hybrid bootable ISO file..."
+xorriso -as mkisofs -o $NEW_ISO_FILE -J -R \
+    -b isolinux/isolinux.bin -c .boot.cat \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    -eltorito-alt-boot -e /EFI/boot/bootx64.efi -no-emul-boot \
+    -append_partition 2 0xef $NEW_ISO_PATH/boot/efi.img \
+    -graft-points \
+        /isolinux=$NEW_ISO_PATH/isolinux \
+        /EFI=$NEW_ISO_PATH/EFI \
+        /=$NEW_ISO_PATH
 echo
 
-echo "Creating a FAT filesystem for EFI data..."
-mkfs.vfat -C $EFI_IMG_PATH 65536
-mmd -i $EFI_IMG_PATH ::/EFI
-mcopy -i $EFI_IMG_PATH -s $NEW_ISO_P2_CONTENTS/* ::/
-echo
-
-echo "Creating new UEFI bootable ISO file..."
-xorriso -as mkisofs -o $NEW_ISO_PATH -J -R \
-    -append_partition 2 0xef $EFI_IMG_PATH \
-    -eltorito-alt-boot \
-    -e /EFI/boot/bootx64.efi -no-emul-boot \
-    -isohybrid-gpt-basdat \
-    $NEW_ISO_P1_CONTENTS
+echo "Making bootable..."
+isohybrid --uefi $NEW_ISO_FILE
 echo
 
 echo "Unmounting old ISO and removing temp files..."
 umount $MOUNT_POINT
-umount $MOUNT_POINT_EFI
 losetup -d $LOOP_DEVICE
-rm -rf $MOUNT_POINT $MOUNT_POINT_EFI $EXTRACTED_PATH $MODIFIED_SQUASHFS_PATH $NEW_ISO_P1_CONTENTS $NEW_ISO_P2_CONTENTS $EFI_IMG_PATH 
+rm -rf $MOUNT_POINT $EXTRACTED_PATH $MODIFIED_SQUASHFS_PATH $NEW_ISO_PATH 
 echo
 
-echo "New ISO created at $NEW_ISO_PATH"
+echo "New ISO created at $NEW_ISO_FILE"
