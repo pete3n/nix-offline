@@ -1,0 +1,11 @@
+--- welcome.conf	2024-01-13 19:35:54.772549427 -0500
++++ welcome.conf.offline	2024-01-13 19:36:19.697950779 -0500
+@@ -61,7 +61,7 @@
+     required:
+         - storage
+         - ram
+-        - internet
++#        - internet
+ 
+ # GeoIP checking
+ #
