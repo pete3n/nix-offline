@@ -17,7 +17,7 @@
           nixpkgs.overlays = [
             (self: super: {
               calamares-nixos-extensions = super.calamares-nixos-extensions.overrideAttrs (oldAttrs: rec {
-                patches = oldAttrs.patches or [] ++ [ ./welcome.patch ];
+                patches = oldAttrs.patches or [] ++ [ ./patches/welcome.patch ];
               });
             })
           ];
