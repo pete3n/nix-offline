@@ -31,6 +31,12 @@ esac
 
 ISO_DIR="./result/iso/"
 ISO_PATH=$(find $ISO_DIR -type f -name "*.iso" -print -quit)
+ISO_LABEL=$(blkid -o value -s LABEL "$ISO_PATH")
+
+if [ -z "$ISO_LABEL" ]; then
+    echo "Could not find original ISO label at $ISO_PATH"
+    exit 1
+fi
 
 if [[ ! -f "$ISO_PATH" ]]; then
     echo "No ISO file found in $ISO_DIR"
@@ -104,7 +110,7 @@ echo "Creating new bootable ISO file..."
 xorriso -as mkisofs -isohybrid-mbr $NEW_ISO_PATH/isolinux/isohdpfx.bin -c isolinux/boot.cat -b isolinux/isolinux.bin \
     -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot \
     -e boot/efi.img -no-emul-boot -isohybrid-gpt-basdat \
-    -o $NEW_ISO_FILE \
+    -o $NEW_ISO_FILE -V $ISO_LABEL \
     -graft-points \
     /isolinux=$NEW_ISO_PATH/isolinux \
     /EFI=$NEW_ISO_PATH/EFI \
