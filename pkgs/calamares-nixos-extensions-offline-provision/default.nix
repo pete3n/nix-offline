@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "calamares-nixos-extensions-offline";
-  version = "provision-v0.1.1";
+  version = "provision-v0.1.2";
 
   src = fetchFromGitHub {
     owner = "pete3n";

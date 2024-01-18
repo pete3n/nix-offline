@@ -1,6 +1,6 @@
 { pkgs, ... }:
 
 {
-  calamares-nixos-extensions-provision = pkgs.callPackage ./calamares-nixos-extensions-provision { };
-  calamares-nixos-extensions-install = pkgs.callPackage ./calamares-nixos-extensions-install { };
+  calamares-nixos-extensions-offline-provision = pkgs.callPackage ./calamares-nixos-extensions-offline-provision { };
+  calamares-nixos-extensions-offline-install = pkgs.callPackage ./calamares-nixos-extensions-offline-install { };
 }
