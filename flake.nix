@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, ... }@inputs: 
   rec {
-    nixosConfigurations.getac-iso = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.offline = nixpkgs.lib.nixosSystem {
       specialArgs = { inherit inputs; };
       system = "x86_64-linux";
       modules = [
@@ -23,12 +23,16 @@
           ];
         })
         "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
-        ({ pkgs, ... }: {
-          isoImage.squashfsCompression = "gzip -Xcompression-level 1";
+        ({ pkgs, config, ... }: {
+          isoImage = {
+            storeContents = [ config.system.build.toplevel ];
+            includeSystemBuildDependencies = true;
+            squashfsCompression = "gzip -Xcompression-level 1";
+          };
           environment.systemPackages = with pkgs; [ git pkgs.neovim ];
         })
       ];
     };
-    iso.getac = nixosConfigurations.getac-iso.config.system.build.isoImage;
+    iso.offline = nixosConfigurations.offline.config.system.build.isoImage;
   };
 }
