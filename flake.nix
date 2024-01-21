@@ -6,7 +6,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs";
   };
 
-  
   outputs = { self, nixpkgs, ... }@inputs: rec {
 
     nixosConfigurations = {
@@ -47,6 +46,12 @@
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, config, ... }: {
             isoImage = {
+              contents = [
+                {
+                    source = ./nixos;
+                    target = "/nixos";
+                }
+              ];
               storeContents = [ 
                 config.system.build.toplevel
               ];
@@ -71,6 +76,12 @@
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, config, ... }: {
             isoImage = {
+              contents = [
+                {
+                    source = ./nixos;
+                    target = "/nixos";
+                }
+              ];
               storeContents = [ 
                 config.system.build.toplevel
               ];
