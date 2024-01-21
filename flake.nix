@@ -36,6 +36,7 @@
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
         modules = [
+          ./nixos/configuration.nix
           ({ pkgs, lib, ... }: {
             nixpkgs.overlays = [
               (self: super: {
@@ -66,6 +67,7 @@
         specialArgs = { inherit inputs; };
         system = "x86_64-linux";
         modules = [
+          ./nixos/configuration.nix
           ({ pkgs, lib, ... }: {
             nixpkgs.overlays = [
               (self: super: {
