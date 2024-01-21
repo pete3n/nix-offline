@@ -82,7 +82,7 @@
       };
     };
 
-    iso.offline = nixosConfigurations.offline-provisioner.config.system.build.isoImage;
+    iso.offline = nixosConfigurations.offline.config.system.build.isoImage;
     iso.offline-provisioner = nixosConfigurations.offline-provisioner.config.system.build.isoImage;
     iso.offline-installer = nixosConfigurations.offline-installer.config.system.build.isoImage;
   };
