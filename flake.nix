@@ -1,5 +1,5 @@
 {
-  description = "Custom NixOS 23.11 installation media - offline patch";
+  description = "Custom NixOS offline installation ISO";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
@@ -13,10 +13,15 @@
 
   outputs = { self, nixpkgs, nixos-flake, ... }@inputs: rec {
 
-    nixosConfigurations = {
-      offline-provisioner = nixpkgs.lib.nixosSystem {
+    systems = [
+      "x86_64-linux"
+      "aarch64-linux" 
+    ];
+
+    nixosConfigurationsForAllSystems = system: {
+      "offline-provisioner-${system}" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
-        system = "x86_64-linux";
+        inherit system;
         modules = [
           ({ pkgs, lib, ... }: {
             nixpkgs.overlays = [
@@ -28,18 +33,15 @@
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
           ({ pkgs, config, ... }: {
             isoImage = {
-             # storeContents = [ 
-             #   config.system.build.toplevel
-             # ];
               squashfsCompression = "gzip -Xcompression-level 1";
             };
           })
         ];
       };
 
-      offline-installer = nixpkgs.lib.nixosSystem {
+      "offline-installer-${system}" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
-        system = "x86_64-linux";
+        inherit system;
         modules = [
           ./nix-cfg/nixos/configuration.nix
           ({ pkgs, lib, ... }: {
@@ -68,9 +70,9 @@
         ];
       };
 
-      offline = nixpkgs.lib.nixosSystem {
+      "offline-${system}" = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
-        system = "x86_64-linux";
+        inherit system;
         modules = [
           ./nix-cfg/nixos/configuration.nix
           ({ pkgs, lib, ... }: {
@@ -99,8 +101,8 @@
         ];
       };
 
-      offline-flake = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+      "offline-flake-${system}" = nixpkgs.lib.nixosSystem {
+        inherit system;
         specialArgs = { inherit inputs; };
         modules = [
           ({ pkgs, lib, ... }: {
@@ -130,10 +132,11 @@
         ];
       };
     };
-    
-    iso.offline = nixosConfigurations.offline.config.system.build.isoImage;
-    iso.offline-flake = nixosConfigurations.offline-flake.config.system.build.isoImage;
-    iso.offline-provisioner = nixosConfigurations.offline-provisioner.config.system.build.isoImage;
-    iso.offline-installer = nixosConfigurations.offline-installer.config.system.build.isoImage;
+   
+    # Generate nixosConfigurations for each system
+    nixosConfigurations = builtins.foldl' (acc: system: acc // (nixosConfigurationsForAllSystems system)) { } systems;
+
+    # Generate iso configurations for each system
+    iso = builtins.mapAttrs (name: config: config.config.system.build.isoImage) nixosConfigurations;
   };
 }
