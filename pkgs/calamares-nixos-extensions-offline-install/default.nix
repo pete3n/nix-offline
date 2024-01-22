@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
     owner = "pete3n";
     repo = "calamares-nixos-extensions-offline";
     rev = version;
-    hash = "";
+    hash = "sha256-KZHonKFeVQf0hX10VlyGkcIBh/RHuBZT89eJsoGiyBU=";
   };
 
   installPhase = ''

@@ -2,13 +2,13 @@
 
 stdenv.mkDerivation rec {
   pname = "calamares-nixos-extensions-offline";
-  version = "0.1.0";
+  version = "0.3.14";
 
   src = fetchFromGitHub {
     owner = "pete3n";
     repo = "calamares-nixos-extensions-offline";
     rev = version;
-    hash = "";
+    hash = "sha256-wiH+BH8sFEAgYVI3mA6ZWcmrQUKbROXm6GgvZy3gQpU=";
   };
 
   installPhase = ''
